@@ -4,8 +4,8 @@ set.seed(1234)
 library(randomForest)
 
  # leitura dos dados usando um arquivo csv.
-train <- read.csv("C:/Users/Elaine/Desktop/kaggletitanic/train.csv")
- test <- read.csv("C:/Users/Elaine/Desktop/kaggletitanic/test.csv")
+train <- read.csv("C:/caminho/train.csv")
+ test <- read.csv("C:/caminho/test.csv")
 
    # aplica a função class em todos os atributos do  dataset
   
