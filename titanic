@@ -1,0 +1,98 @@
+ 
+set.seed(1234)
+
+library(randomForest)
+
+ # leitura dos dados usando um arquivo csv.
+train <- read.csv("C:/Users/Elaine/Desktop/kaggletitanic/train.csv")
+ test <- read.csv("C:/Users/Elaine/Desktop/kaggletitanic/test.csv")
+
+   # aplica a função class em todos os atributos do  dataset
+  
+   
+  summary(train) #sumarizando os dados do train
+  str(train)# Inspecionando a base train,mostra toda a estrutura
+  
+  train <- read.csv("C:/Users/Elaine/Desktop/kaggletitanic/train.csv",stringsAsFactors=FALSE)# converte os "int" em factor para melhor manipular 
+  
+  table(train$Survived)# verifica se que 549 passageiros morreram e 342 sobreviveram 
+  
+  # Que proporção os passageiros sobreviveram 
+  prop.table(table(train$Survived)) # 61% = mortos e 38% = sobreviventes
+  
+  test$Survived <- rep(0,418)
+  submit <- data.frame(PassengerId = test$PassengerId, Survived = test$Survived)
+  write.csv(submit, file = "deathsea.csv", row.names = FALSE)
+  
+  
+  train <- read.csv("C:/Users/Elaine/Desktop/kaggletitanic/train.csv")
+  
+  summary(train$Sex)
+  # total de homens e mulheres
+  survived_by_sex <- table(train$Sex,train$Survived)
+  prop.table(survived_by_sex,1) #Proporção de 25% mulheres mortas e 74% sobreviventes
+  #proporção de 81% homens mortos e 18% sobreviventes
+
+summary(train$Age) # sumarizando a idade,percebe se que há 117 valores perdidos supõe se que são crianças ou abaixo dos 20 anos
+
+train$Child <- 0 # NA´s valor atribuido a Zero  
+train$Child[train$Age < 18] <- 1 # valor 1 atribuido a pessoas com idade menor que 18
+
+aggregate(Survived ~ Child + Sex, data=train, FUN=sum)#proporções de sobrevivência para os diversos subgrupos
+aggregate(Survived ~ Child + Sex, data=train, FUN=length)#diferentes combinações possíveis das variáveis idade e sexo e aplica a função de soma ao vetor survived para cada um desses subconjuntos
+# Como a variável de interesse é codificado como um 1 para survived , e 0 para Died , o resultado da soma é o número de survived
+aggregate(Survived ~ Child + Sex, data=train, FUN=function(x) {sum(x)/length(x)})
+
+train$Fare2 <- '30+' #analise por tarifa,classe,sexo e sobreviveram
+train$Fare2[train$Fare < 30 & train$Fare >= 20] <- '20-30'
+train$Fare2[train$Fare < 20 & train$Fare >= 10] <- '10-20'
+train$Fare2[train$Fare < 10] <- '<10'
+aggregate(Survived ~ Fare2 + Pclass + Sex, data=train, FUN=function(x) {sum(x)/length(x)})
+test$Survived <- 0
+test$Survived[test$Sex == 'female'] <- 1
+test$Survived[test$Sex == 'female' & test$Pclass == 3 & test$Fare >= 20] <- 0
+
+# Que proporção os passageiros sobreviveram (total, by sex, by class)
+
+prop.table(table(train$Pclass,train$Survived),1)#proporção dos sobreviventes por classe
+
+# Abaixo os  plots os passageiros sobreviventes por sexo,classe e idade
+
+train$Survived <- factor(train$Survived, levels=c(1,0))
+levels(train$Survived) <- c("Sobreviveu", "Morreu")
+train$Pclass <- as.factor(train$Pclass)
+levels(train$Pclass) <- c("1st Class", "2nd Class", "3rd Class")
+
+plot(train$Survived ~ train$Sex, main= "Sobreviventes por Gênero", xlab="", ylab="",
+     col=c("#33EE55","#000000"))
+
+plot(train$Pclass ~ train$Survived, main="Sobreviventes por Classe",
+     color=c("#8dd3c7", "#fb8072"), shade=FALSE,  xlab="", ylab="",
+     off=c(0), cex.axis=1.4)
+plot(train$Survived ~ train$Age, main="Sobreviventes por Idade")
+
+
+test<-na.omit(test)
+
+formula <- Survived ~ Pclass + Sex + Age
+model <- randomForest(formula, test, do.trace=500, importance=TRUE)
+model
+
+str(test)
+test$Pclass <- as.factor(test$Pclass)
+test$Sex <- as.factor(test$Sex)
+test$Age <- as.integer(test$Age)
+test$Survived <- as.factor(test$Survived)
+
+test$predict<- predict (model,test)
+
+t <- table(predict(model), test$Survived)
+
+#calcular a acuracia do conj test
+acuracia <- (t[1, 1] + t[2, 2])/sum(t)
+
+#imprime a acuracia do conj de test
+t
+
+
+
